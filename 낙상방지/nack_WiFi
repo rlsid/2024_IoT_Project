@@ -1,0 +1,77 @@
+#include <ESP8266WiFi.h>
+
+// 핀 정의
+#define TRIG_PIN_TOP D1  // 상단 센서 트리거 핀
+#define ECHO_PIN_TOP D2  // 상단 센서 에코 핀
+#define TRIG_PIN_BOTTOM D3  // 하단 센서 트리거 핀
+#define ECHO_PIN_BOTTOM D4  // 하단 센서 에코 핀
+
+#define RED_PIN D5    // RGB LED의 빨간색 핀
+#define GREEN_PIN D6 // RGB LED의 초록색 핀
+#define BLUE_PIN D7  // RGB LED의 파란색 핀 (필요에 따라 사용)
+
+// 센서 간의 위치 차이 (단위: cm)
+const float positionDifference = 20;
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Setup started"); // 디버깅 메시지 추가
+  pinMode(TRIG_PIN_TOP, OUTPUT);
+  pinMode(ECHO_PIN_TOP, INPUT);
+  pinMode(TRIG_PIN_BOTTOM, OUTPUT);
+  pinMode(ECHO_PIN_BOTTOM, INPUT);
+
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+  digitalWrite(BLUE_PIN, LOW); // 파란색은 사용하지 않음, 항상 꺼둠
+  Serial.println("Setup complete"); // 디버깅 메시지 추가
+}
+
+void loop() {
+  Serial.println("Loop is running"); // 디버깅 메시지 추가
+  float distanceTop = measureDistance(TRIG_PIN_TOP, ECHO_PIN_TOP);
+  float distanceBottom = measureDistance(TRIG_PIN_BOTTOM, ECHO_PIN_BOTTOM);
+  float distanceDifference = distanceTop - distanceBottom;
+
+  if (distanceDifference != 0) { // 0으로 나누는 경우를 피하기 위해 조건 추가
+    float result = positionDifference / distanceDifference;
+    Serial.print("Distance Top: ");
+    Serial.print(distanceTop);
+    Serial.print(" cm, Distance Bottom: ");
+    Serial.print(distanceBottom);
+    Serial.print(" cm, Result: ");
+    Serial.println(result);
+    
+    if (result < 0.08333) {
+      setLEDColor(GREEN_PIN);
+    } else {
+      setLEDColor(RED_PIN);
+    }
+  } else {
+    Serial.println("Distance difference is zero, cannot divide.");
+  }
+
+  delay(500); // 1초 대기
+}
+
+float measureDistance(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  float distance = (duration * 0.0343) / 2; // 거리 계산 (cm)
+  return distance;
+}
+
+void setLEDColor(int pin) {
+  // LED를 켜기 전에 모든 색을 끔
+  digitalWrite(RED_PIN, LOW);
+  digitalWrite(GREEN_PIN, LOW);
+  digitalWrite(BLUE_PIN, LOW);
+  
+  // 선택한 색을 켬
+  digitalWrite(pin, HIGH);
+}
