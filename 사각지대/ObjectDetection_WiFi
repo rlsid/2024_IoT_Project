@@ -1,0 +1,125 @@
+#include <ESP8266WiFi.h>
+
+// 핀 정의
+#define RED D6
+#define GREEN D7
+#define BUTTON D8
+
+int buzzer = D5;
+int trigPin = D1;
+int echoPin = D2;
+
+int buttonPreState = HIGH;
+bool state = false;
+
+// Wi-Fi 네트워크 이름과 비밀번호 설정
+const char* ssid = "와파이름";
+const char* password = "와파비번";
+
+void setup() {
+  // 시리얼 통신 초기화
+  Serial.begin(115200);
+  Serial.println("Setup started");
+
+  // 핀 모드 설정
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(RED, OUTPUT);
+  pinMode(GREEN, OUTPUT);
+  pinMode(BUTTON, INPUT_PULLUP);
+
+  // 초기 LED 상태 설정
+  digitalWrite(RED, HIGH);
+  digitalWrite(GREEN, LOW);
+
+  // Wi-Fi 모드 설정
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  // Wi-Fi 연결 시도
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  
+  int retries = 0;
+  while (WiFi.status() != WL_CONNECTED && retries < 30) {
+    delay(500);
+    Serial.print(".");
+    retries++;
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    // 연결 성공 시 IP 주소 출력
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    Serial.println("Setup complete");
+  } else {
+    Serial.println("");
+    Serial.println("WiFi connection failed");
+  }
+}
+
+void loop() {
+  // IP 주소 출력
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  int reading = digitalRead(BUTTON);
+  Serial.print("Button reading: ");
+  Serial.println(reading);
+
+  if (reading == LOW && buttonPreState != reading) {
+    state = !state;
+    delay(100);
+  }
+  
+  buttonPreState = reading;
+
+  if (state == true) {
+    Serial.println("play");
+    checkDistance();
+  } else {
+    Serial.println("stop");
+  }
+
+  delay(800);
+}
+
+void checkDistance() {
+  // 초음파 센서로 거리 측정
+  int redValue = 0;
+  int greenValue = 0;
+  float duration, distance;
+
+  digitalWrite(buzzer, LOW);
+  analogWrite(RED, redValue);
+  analogWrite(GREEN, greenValue);
+
+  digitalWrite(trigPin, HIGH);
+  delay(20);
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH);
+  distance = ((float)(340 * duration) / 10000) / 2;
+
+  Serial.print("Measured Distance: ");
+  Serial.print(distance);
+  Serial.println(" Cm");
+
+  if (distance < 400) {
+    redValue = 0;
+    greenValue = 255;
+    analogWrite(RED, redValue);
+    analogWrite(GREEN, greenValue);
+
+    if (distance < 30) {
+      redValue = 255;
+      greenValue = 0;
+      analogWrite(RED, redValue);
+      analogWrite(GREEN, greenValue);
+      digitalWrite(buzzer, HIGH);
+    }
+  }
+}
