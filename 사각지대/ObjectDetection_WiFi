@@ -15,8 +15,8 @@ unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 100; // 디바운싱 지연 시간 (밀리초)
 
 // Wi-Fi 네트워크 이름과 비밀번호 설정
-const char* ssid = "ksh";
-const char* password = "01160116";
+const char* ssid = "와파이름";
+const char* password = "와파비밀번호";
 
 
 void setup() {
