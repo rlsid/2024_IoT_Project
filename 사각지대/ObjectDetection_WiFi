@@ -11,15 +11,18 @@ int echoPin = D2;
 
 int buttonPreState = HIGH;
 bool state = false;
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 100; // 디바운싱 지연 시간 (밀리초)
 
 // Wi-Fi 네트워크 이름과 비밀번호 설정
-const char* ssid = "와파이름";
-const char* password = "와파비번";
+const char* ssid = "ksh";
+const char* password = "01160116";
+
 
 void setup() {
   // 시리얼 통신 초기화
   Serial.begin(115200);
-  Serial.println("Setup started");
+
 
   // 핀 모드 설정
   pinMode(trigPin, OUTPUT);
@@ -39,55 +42,52 @@ void setup() {
 
   // Wi-Fi 연결 시도
   Serial.print("Connecting to ");
-  Serial.println(ssid);
+  Serial.print(ssid);
   
-  int retries = 0;
-  while (WiFi.status() != WL_CONNECTED && retries < 30) {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    retries++;
   }
   
-  if (WiFi.status() == WL_CONNECTED) {
-    // 연결 성공 시 IP 주소 출력
-    Serial.println("");
-    Serial.println("WiFi connected");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println("Setup complete");
-  } else {
-    Serial.println("");
-    Serial.println("WiFi connection failed");
-  }
+  // 연결 성공 시 IP 주소 출력
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
 void loop() {
+
   // IP 주소 출력
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 
-  int reading = digitalRead(BUTTON);
-  Serial.print("Button reading: ");
-  Serial.println(reading);
-
-  if (reading == LOW && buttonPreState != reading) {
-    state = !state;
-    delay(100);
-  }
+  int reading = digitalRead(7);  // 버튼 상태 읽기
   
-  buttonPreState = reading;
+  if (reading != buttonPreState) {
+    lastDebounceTime = millis();
+  }
 
-  if (state == true) {
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading == LOW && buttonPreState == HIGH) {
+      state = !state;
+    }
+  }
+
+  buttonPreState = reading; 
+
+  if(state == true){
     Serial.println("play");
     checkDistance();
-  } else {
+  }
+  else{
     Serial.println("stop");
   }
 
   delay(800);
 }
 
-void checkDistance() {
+void checkDistance(){
   // 초음파 센서로 거리 측정
   int redValue = 0;
   int greenValue = 0;
@@ -104,22 +104,27 @@ void checkDistance() {
   duration = pulseIn(echoPin, HIGH);
   distance = ((float)(340 * duration) / 10000) / 2;
 
-  Serial.print("Measured Distance: ");
-  Serial.print(distance);
-  Serial.println(" Cm");
-
   if (distance < 400) {
     redValue = 0;
     greenValue = 255;
     analogWrite(RED, redValue);
     analogWrite(GREEN, greenValue);
 
-    if (distance < 30) {
+    
+    if (distance < 300) {
       redValue = 255;
       greenValue = 0;
+      
       analogWrite(RED, redValue);
       analogWrite(GREEN, greenValue);
       digitalWrite(buzzer, HIGH);
+
+      delay(100);
     }
   }
+
+  //Serial.print("Distance: ");
+  //Serial.print(distance);
+  //Serial.println(" Cm");
+
 }
